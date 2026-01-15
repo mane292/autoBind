@@ -1,0 +1,11 @@
+typer
+numpy
+parmed
+metallicious
+
+[test]
+coverage
+pytest
+ruff
+ty
+ipdb

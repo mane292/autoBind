@@ -14,7 +14,10 @@ classifiers = [
 ]
 license = {text = "MIT"}
 dependencies = [
-  "typer"
+  "typer",
+  "numpy",
+  "parmed",
+  "metallicious",
 ]
 requires-python = ">= 3.10"
 
@@ -51,6 +54,14 @@ select = [
     "I",   # isort
     "B",   # flake8-bugbear
     "UP",  # pyupgrade
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+autobind = [
+  "data/**/*",
 ]
 
 [tool.uv]

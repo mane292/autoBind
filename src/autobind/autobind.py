@@ -190,6 +190,47 @@ class AutoBind:
         },
         'dichloromethane': {'identifier': 'DCM'},  # Alias
         'CH2Cl2': {'identifier': 'DCM'},  # Alias
+        'ACE': {
+            'full_name': 'Acetone',
+            'identifier': 'ACE',
+            'description': 'Polar aprotic solvent'
+        },
+        'acetone': {'identifier': 'ACE'},  # Alias
+        'DMSO': {
+            'full_name': 'Dimethyl sulfoxide',
+            'identifier': 'DMSO',
+            'description': 'Polar aprotic solvent'
+        },
+        'dimethyl sulfoxide': {'identifier': 'DMSO'},  # Alias
+        'HCN': {
+            'full_name': 'Acetonitrile',
+            'identifier': 'HCN',
+            'description': 'Polar aprotic solvent'
+        },
+        'acetonitrile': {'identifier': 'HCN'},  # Alias
+        'ACN': {'identifier': 'HCN'},  # Alias
+        'MeCN': {'identifier': 'HCN'},  # Alias
+        'Nitro': {
+            'full_name': 'Nitromethane',
+            'identifier': 'Nitro',
+            'description': 'Polar aprotic solvent'
+        },
+        'nitromethane': {'identifier': 'Nitro'},  # Alias
+        'MeNO2': {'identifier': 'Nitro'},  # Alias
+        'THF': {
+            'full_name': 'Tetrahydrofuran',
+            'identifier': 'THF',
+            'description': 'Polar aprotic solvent'
+        },
+        'tetrahydrofuran': {'identifier': 'THF'},  # Alias
+        'oDFB': {
+            'full_name': 'ortho-Difluorobenzene',
+            'identifier': 'oDFB',
+            'description': 'Fluorinated aromatic solvent'
+        },
+        'orthodifluorobenzene': {'identifier': 'oDFB'},  # Alias
+        'o-difluorobenzene': {'identifier': 'oDFB'},  # Alias
+        '1,2-difluorobenzene': {'identifier': 'oDFB'},  # Alias
     }
 
     # =========================================================================
@@ -212,6 +253,12 @@ class AutoBind:
     # Available solvents and their files (in data/solvent_box_info/)
     AVAILABLE_SOLVENTS = {
         'DCM': {'lib': 'DCMequilbox.lib', 'box_name': 'DCMequilbox'},
+        'ACE': {'lib': 'ACEequilbox.lib', 'box_name': 'ACEequilbox'},
+        'DMSO': {'lib': 'DMSOequilbox.lib', 'box_name': 'DMSOequilbox'},
+        'HCN': {'lib': 'HCNequilbox.lib', 'box_name': 'HCNequilbox'},
+        'Nitro': {'lib': 'Nitroequilbox.lib', 'box_name': 'Nitroequilbox'},
+        'THF': {'lib': 'THFequilbox.lib', 'box_name': 'THFequilbox'},
+        'oDFB': {'lib': 'oDFBequilbox.lib', 'box_name': 'oDFBequilbox'},
     }
 
     def __init__(
@@ -1666,7 +1713,7 @@ Examples:
 
 Available counterion types: BArF
 Available substrates: pToluquinone, PTQ, toluquinone
-Available solvents: DCM, dichloromethane, CH2Cl2
+Available solvents: DCM, ACE (acetone), DMSO, HCN (acetonitrile), Nitro (nitromethane), THF, oDFB
         """
     )
     parser.add_argument("input_pdb", help="Input PDB file with cage structure")

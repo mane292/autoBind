@@ -1,0 +1,43 @@
+Metadata-Version: 2.4
+Name: autoBind
+Version: 0.1.0
+Summary: A package to automatically parametrize and run MD equilibration and then enahanced sampling calculations for Pd2L4 cage systems
+Author-email: "Melissa T. Manetsch" <manets12@mit.edu>
+Maintainer-email: "Melissa T. Manetsch" <manets12@mit.edu>
+License: MIT
+Project-URL: bugs, https://github.com/mane292/autobind/issues
+Project-URL: changelog, https://github.com/mane292/autobind/blob/master/changelog.md
+Project-URL: homepage, https://github.com/mane292/autobind
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: typer
+Requires-Dist: numpy
+Requires-Dist: parmed
+Requires-Dist: metallicious
+Provides-Extra: test
+Requires-Dist: coverage; extra == "test"
+Requires-Dist: pytest; extra == "test"
+Requires-Dist: ruff; extra == "test"
+Requires-Dist: ty; extra == "test"
+Requires-Dist: ipdb; extra == "test"
+Dynamic: license-file
+
+# autoBind
+
+![PyPI version](https://img.shields.io/pypi/v/autoBind.svg)
+[![Documentation Status](https://readthedocs.org/projects/autoBind/badge/?version=latest)](https://autoBind.readthedocs.io/en/latest/?version=latest)
+
+A package to automatically parametrize and run MD equilibration and then enahanced sampling calculations for Pd2L4 cage systems
+
+* PyPI package: https://pypi.org/project/autoBind/
+* Free software: MIT License
+* Documentation: https://autoBind.readthedocs.io.
+
+## Features
+
+* TODO
+
+## Credits
+
+This package was created with [Cookiecutter](https://github.com/audreyfeldroy/cookiecutter) and the [audreyfeldroy/cookiecutter-pypackage](https://github.com/audreyfeldroy/cookiecutter-pypackage) project template.

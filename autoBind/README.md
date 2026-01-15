@@ -2,17 +2,580 @@
 
 ![PyPI version](https://img.shields.io/pypi/v/autoBind.svg)
 [![Documentation Status](https://readthedocs.org/projects/autoBind/badge/?version=latest)](https://autoBind.readthedocs.io/en/latest/?version=latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A package to automatically parametrize and run MD equilibration and then enahanced sampling calculations for Pd2L4 cage systems
+A Python package to automatically parametrize and prepare AMBER topology files for Pd2L4 cage systems, including counterions, substrates, and solvation for molecular dynamics simulations.
 
-* PyPI package: https://pypi.org/project/autoBind/
-* Free software: MIT License
-* Documentation: https://autoBind.readthedocs.io.
+* **PyPI package**: https://pypi.org/project/autoBind/
+* **Free software**: MIT License
+* **Documentation**: https://autoBind.readthedocs.io
 
 ## Features
 
-* TODO
+- Automated AMBER topology generation for metallocage structures
+- Integration with [metallicious](https://github.com/duartegroup/metallicious) for metal coordination parametrization
+- Automatic positioning of counterions around the cage exterior
+- Automatic positioning of substrates inside the cage cavity
+- Support for custom solvents, counterions, and substrates
+- Generation of tleap input files for solvation
+- Easy-to-use Python API and command-line interface
+
+## Installation
+
+### Prerequisites
+
+autoBind requires AmberTools (for `tleap`). Install it first:
+
+```bash
+# Using conda (recommended)
+conda install -c conda-forge ambertools
+```
+
+### Option 1: Using conda (recommended)
+
+```bash
+# Create a new environment
+conda create -n autobind python=3.10
+conda activate autobind
+
+# Install AmberTools
+conda install -c conda-forge ambertools
+
+# Clone and install autoBind
+git clone https://github.com/mane292/autobind.git
+cd autobind/autoBind
+pip install -e .
+```
+
+### Option 2: Using the environment file
+
+```bash
+git clone https://github.com/mane292/autobind.git
+cd autobind/autoBind
+
+# Create environment from file
+conda env create -f environment.yml
+conda activate autobind
+
+# Install AmberTools separately
+conda install -c conda-forge ambertools
+```
+
+### Option 3: Using pip only
+
+```bash
+pip install autoBind
+```
+
+**Note**: You will still need to install AmberTools separately for the `tleap` command.
+
+### Verify Installation
+
+```python
+from autobind import AutoBind
+AutoBind.list_available()  # Lists all available components
+```
+
+## Quick Start
+
+### Basic Usage (Python API)
+
+```python
+from autobind import AutoBind, run_autobind
+
+# Simple one-liner with defaults (BArF counterions, pToluquinone substrate, DCM solvent)
+ab = run_autobind("my_cage.pdb")
+
+# Or with more control
+ab = AutoBind(
+    input_pdb="my_cage.pdb",
+    metal_charges={'Pd': 2},
+    counterion_type='BArF',      # Uses 4 BArF anions automatically
+    substrate='pToluquinone',     # p-Toluquinone substrate
+    solvent='DCM',                # Dichloromethane
+    working_dir='./output'
+)
+ab.run_all()
+```
+
+### Command-Line Interface
+
+```bash
+# Basic usage with defaults
+python -m autobind.autobind my_cage.pdb
+
+# Specify components
+python -m autobind.autobind my_cage.pdb --counterion BArF --substrate pToluquinone --solvent DCM
+
+# Without substrate (empty cage)
+python -m autobind.autobind my_cage.pdb --no-substrate
+
+# Without counterions
+python -m autobind.autobind my_cage.pdb --no-counterions
+
+# Custom metal charges
+python -m autobind.autobind my_cage.pdb -m Pd 2 -m Pt 2
+```
+
+### Output Files
+
+After running, you will find in your working directory:
+
+| File | Description |
+|------|-------------|
+| `CAGE_solv.prmtop` | Solvated system AMBER topology |
+| `CAGE_solv.inpcrd` | Solvated system coordinates |
+| `ALL_dry.prmtop` | Dry system AMBER topology |
+| `ALL_dry.inpcrd` | Dry system coordinates |
+| `CAGE.mol2` | Cage structure in mol2 format |
+| `CAGE.frcmod` | Extracted force field parameters |
+
+## Configuration Options
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `input_pdb` | (required) | Input PDB file with cage structure |
+| `metal_charges` | `{'Pd': 2}` | Dictionary of metal symbols and charges |
+| `counterion_type` | `'BArF'` | Counterion type (see available below) |
+| `substrate` | `'pToluquinone'` | Substrate name (see available below) |
+| `solvent` | `'DCM'` | Solvent name (see available below) |
+| `working_dir` | current dir | Output directory |
+| `process_counterions` | `True` | Include counterions |
+| `process_substrate` | `True` | Include substrate |
+| `counterion_placement_multiplier` | `2.0` | Distance from cage center (× radius) |
+| `substrate_covalent_cutoff` | `2.5` | Min distance to linkers (Angstroms) |
+| `lj_type` | `'merz-opc'` | LJ parameters for metallicious |
+
+## Available Components
+
+### Counterion Types
+
+| Name | Full Name | Residues |
+|------|-----------|----------|
+| `BArF` | Tetrakis(3,5-bis(trifluoromethyl)phenyl)borate | BFV, BFW, BFX, BFY |
+
+### Substrates
+
+| Name | Aliases | Full Name |
+|------|---------|-----------|
+| `pToluquinone` | `PTQ`, `toluquinone`, `p-toluquinone` | para-Toluquinone (2-methyl-1,4-benzoquinone) |
+
+### Solvents
+
+| Name | Aliases | Full Name |
+|------|---------|-----------|
+| `DCM` | `dichloromethane`, `CH2Cl2` | Dichloromethane |
+
+---
+
+## Adding New Components
+
+autoBind is designed to be extensible. You can add your own solvents, counterions, and substrates.
+
+### Adding a New Solvent
+
+To add a new solvent, you need:
+
+1. **A `.lib` file** - An AMBER library file containing the equilibrated solvent box
+2. **Update the solvent library** - Register the solvent in autoBind
+
+#### Step 1: Prepare the Solvent Box Library File
+
+The `.lib` file is an AMBER OFF (Object File Format) library containing pre-equilibrated solvent molecules. You can create one using `tleap`:
+
+```bash
+# Example: Creating a chloroform solvent box
+tleap -f - <<EOF
+source leaprc.gaff2
+CLF = loadmol2 chloroform.mol2
+loadamberparams chloroform.frcmod
+set CLF restype solvent
+set CLF.1 name "CLF"
+solvatebox CLF CLF 30.0 iso
+saveoff CLF CHCl3box.lib
+quit
+EOF
+```
+
+#### Step 2: Place the File
+
+Copy your `.lib` file to:
+```
+src/autobind/data/solvent_box_info/
+```
+
+Also copy the `leaprc.gaff2` file if you have custom parameters.
+
+#### Step 3: Register the Solvent
+
+```python
+from autobind import AutoBind
+
+# Register the new solvent
+AutoBind.add_solvent(
+    name='CHCl3',                    # Internal identifier
+    lib_file='CHCl3box.lib',         # Filename in data/solvent_box_info/
+    box_name='CHCl3box',             # Box name inside the .lib file
+    full_name='Chloroform',          # Human-readable name
+    aliases=['chloroform', 'CHCl3'] # Alternative names users can type
+)
+
+# Now use it
+ab = AutoBind(
+    input_pdb="my_cage.pdb",
+    solvent='chloroform'  # Uses your new solvent
+)
+```
+
+#### Solvent File Format Reference
+
+The `.lib` file contains:
+- Unit definition with atom types, charges, and coordinates
+- Connectivity information
+- Box dimensions for periodic boundary conditions
+
+---
+
+### Adding a New Counterion
+
+To add a new counterion, you need:
+
+1. **A `.mol2` file** - Structure with atom types and partial charges
+2. **A `.frcmod` file** - Force field parameters (if not in standard GAFF2)
+3. **Register the counterion** - Add to the autoBind library
+
+#### Step 1: Prepare the mol2 File
+
+The mol2 file should contain:
+- Correct atom types (GAFF2 compatible)
+- Partial charges (from AM1-BCC, RESP, or other method)
+- Proper residue name (3 characters, e.g., `PF6`)
+
+Example mol2 structure:
+```
+@<TRIPOS>MOLECULE
+PF6
+    7     6     1     0     0
+SMALL
+bcc
+
+@<TRIPOS>ATOM
+      1 P1           0.0000     0.0000     0.0000 p5         1 PF6       1.234567
+      2 F1           1.5800     0.0000     0.0000 f          1 PF6      -0.372428
+      ... (continue for all atoms)
+@<TRIPOS>BOND
+     1     1     2 1
+     ... (continue for all bonds)
+@<TRIPOS>SUBSTRUCTURE
+     1 PF6         1 TEMP              0 ****  ****    0 ROOT
+```
+
+**Generating mol2 and charges:**
+
+```bash
+# Using antechamber to generate mol2 with AM1-BCC charges
+antechamber -i counterion.pdb -fi pdb -o counterion.mol2 -fo mol2 \
+            -c bcc -nc -1 -rn PF6
+```
+
+#### Step 2: Prepare the frcmod File
+
+If your counterion uses non-standard atom types, create an frcmod file:
+
+```
+Remark line goes here
+MASS
+
+BOND
+
+ANGLE
+
+DIHE
+
+IMPROPER
+ca-ca-ca-ha    1.1    180.0    2.0
+
+NONBON
+
+```
+
+**Generate frcmod with parmchk2:**
+
+```bash
+parmchk2 -i counterion.mol2 -f mol2 -o counterion.frcmod
+```
+
+#### Step 3: Place the Files
+
+Copy your files to:
+```
+src/autobind/data/counterions/
+├── PF6.mol2
+└── PF6.frcmod
+```
+
+#### Step 4: Register the Counterion
+
+```python
+from autobind import AutoBind
+
+# First, register each counterion residue file
+AutoBind.add_counterion_residue(
+    name='PF6',                    # Residue name (must match mol2)
+    mol2_file='PF6.mol2',          # Filename in data/counterions/
+    frcmod_file='PF6.frcmod'       # Filename in data/counterions/
+)
+
+# If you need 4 copies (like for Pd2L4 cages), create 4 versions:
+# PF6A, PF6B, PF6C, PF6D with different residue names in mol2
+
+# Then register a counterion "type" that groups them
+AutoBind.register_counterion_type(
+    type_name='PF6',                           # User-friendly name
+    residues=['PF6A', 'PF6B', 'PF6C', 'PF6D'], # List of residue names
+    full_name='Hexafluorophosphate',
+    charge=-1,
+    description='Weakly coordinating anion'
+)
+
+# Now use it
+ab = AutoBind(
+    input_pdb="my_cage.pdb",
+    counterion_type='PF6'
+)
+```
+
+**Important Notes:**
+- For Pd2L4 cages, you typically need 4 counterions to balance the +8 charge
+- Each counterion should have a unique residue name to avoid conflicts in tleap
+- Total charge should balance the cage (e.g., 4× (-1) = -4 for BArF with Pd2L4)
+
+---
+
+### Adding a New Substrate
+
+To add a new substrate, you need:
+
+1. **A `.mol2` file** - Structure with atom types and partial charges
+2. **A `.frcmod` file** - Force field parameters
+3. **Optionally a `.pdb` file** - For visualization/reference
+4. **Register the substrate** - Add to the autoBind library
+
+#### Step 1: Prepare the mol2 File
+
+```
+@<TRIPOS>MOLECULE
+BZQ
+   12    12     1     0     0
+SMALL
+bcc
+
+@<TRIPOS>ATOM
+      1 C1          -1.2000     0.6940     0.0000 c          1 BZQ       0.542500
+      ... (continue for all atoms)
+@<TRIPOS>BOND
+     1     1     2 1
+     ... (continue for all bonds)
+@<TRIPOS>SUBSTRUCTURE
+     1 BZQ         1 TEMP              0 ****  ****    0 ROOT
+```
+
+**Generate with antechamber:**
+
+```bash
+# Generate mol2 with charges (neutral molecule example)
+antechamber -i substrate.pdb -fi pdb -o substrate.mol2 -fo mol2 \
+            -c bcc -nc 0 -rn BZQ
+
+# Generate frcmod
+parmchk2 -i substrate.mol2 -f mol2 -o substrate.frcmod
+```
+
+#### Step 2: Place the Files
+
+Copy your files to:
+```
+src/autobind/data/binding_substrates/
+├── BZQ.mol2
+├── BZQ.frcmod
+└── BZQ.pdb  (optional)
+```
+
+#### Step 3: Register the Substrate
+
+```python
+from autobind import AutoBind
+
+# Register the residue files
+AutoBind.add_substrate_residue(
+    name='BZQ',                    # Residue name (must match mol2)
+    mol2_file='BZQ.mol2',          # Filename in data/binding_substrates/
+    frcmod_file='BZQ.frcmod',      # Filename in data/binding_substrates/
+    pdb_file='BZQ.pdb'             # Optional
+)
+
+# Register user-friendly names and aliases
+AutoBind.register_substrate(
+    chemical_name='benzoquinone',  # Primary name users will type
+    residue='BZQ',                 # Internal residue name
+    full_name='1,4-Benzoquinone',  # Full chemical name
+    description='Simple quinone substrate',
+    aliases=['BQ', 'p-benzoquinone', '1,4-BQ']  # Alternative names
+)
+
+# Now use it
+ab = AutoBind(
+    input_pdb="my_cage.pdb",
+    substrate='benzoquinone'  # Or any alias
+)
+```
+
+---
+
+## File Format Reference
+
+### mol2 File Format
+
+The mol2 (Tripos Sybyl) format contains:
+
+```
+@<TRIPOS>MOLECULE
+<molecule_name>
+<num_atoms> <num_bonds> <num_substructures> 0 0
+SMALL
+bcc
+
+@<TRIPOS>ATOM
+<atom_id> <atom_name> <x> <y> <z> <atom_type> <subst_id> <subst_name> <charge>
+
+@<TRIPOS>BOND
+<bond_id> <atom1_id> <atom2_id> <bond_type>
+
+@<TRIPOS>SUBSTRUCTURE
+<subst_id> <subst_name> <root_atom> TEMP 0 **** **** 0 ROOT
+```
+
+**Key fields:**
+- `atom_type`: GAFF2 atom type (e.g., `ca`, `c3`, `f`, `ha`)
+- `charge`: Partial atomic charge (sum should equal net molecular charge)
+- `bond_type`: `1` (single), `2` (double), `ar` (aromatic)
+
+### frcmod File Format
+
+Force field modification file:
+
+```
+Remark line (description)
+MASS
+<atom_type>  <mass>
+
+BOND
+<type1>-<type2>  <force_constant>  <equilibrium_distance>
+
+ANGLE
+<type1>-<type2>-<type3>  <force_constant>  <equilibrium_angle>
+
+DIHE
+<type1>-<type2>-<type3>-<type4>  <barrier/IDIVF>  <phase>  <periodicity>
+
+IMPROPER
+<type1>-<type2>-<type3>-<type4>  <barrier>  <phase>  <periodicity>
+
+NONBON
+<atom_type>  <radius>  <well_depth>
+```
+
+### lib File Format (Solvents)
+
+AMBER Object File Format (OFF) library files are binary and should be generated using tleap's `saveoff` command.
+
+---
+
+## Advanced Usage
+
+### Running Individual Steps
+
+```python
+from autobind import AutoBind
+
+ab = AutoBind(input_pdb="cage.pdb")
+
+# Run steps individually
+ab._copy_data_files()           # Copy parameter files to working dir
+ab.prepare_topology()           # Run metallicious
+ab.extract_frcmod()             # Extract force field parameters
+ab.position_molecules()         # Position counterions and substrate
+ab.generate_tleap_input()       # Create tleap input file
+ab.run_tleap()                  # Execute tleap
+```
+
+### Skip Topology Preparation
+
+If you already have `cage_out.prmtop` and `cage_out.inpcrd`:
+
+```python
+ab = AutoBind(input_pdb="cage.pdb")
+ab.run_all(skip_topology=True)
+```
+
+### Custom Placement Parameters
+
+```python
+ab = AutoBind(
+    input_pdb="cage.pdb",
+    counterion_placement_multiplier=2.5,  # Place counterions further out
+    substrate_covalent_cutoff=3.0          # More space around substrate
+)
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**"metallicious not found"**
+```bash
+pip install metallicious
+```
+
+**"tleap command not found"**
+```bash
+conda install -c conda-forge ambertools
+```
+
+**"Counterion/substrate residue not found"**
+- Check that the residue name in your mol2 matches what you registered
+- Ensure files are in the correct `data/` subdirectory
+
+**"Mask selected 0 atoms"**
+- Verify your input PDB has the expected residue names
+- Check that cage_out.prmtop was generated correctly
+
+## Dependencies
+
+- Python >= 3.10
+- numpy
+- parmed
+- metallicious
+- AmberTools (for tleap)
+- typer (for CLI)
+
+## Citation
+
+If you use autoBind in your research, please cite:
+
+```bibtex
+@software{autobind,
+  author = {Manetsch, Melissa T.},
+  title = {autoBind: Automated AMBER Topology Generation for Pd2L4 Cage Systems},
+  url = {https://github.com/mane292/autobind},
+  year = {2025}
+}
+```
 
 ## Credits
 
 This package was created with [Cookiecutter](https://github.com/audreyfeldroy/cookiecutter) and the [audreyfeldroy/cookiecutter-pypackage](https://github.com/audreyfeldroy/cookiecutter-pypackage) project template.
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details.

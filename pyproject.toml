@@ -19,7 +19,7 @@ dependencies = [
   "parmed",
   "metallicious",
 ]
-requires-python = ">= 3.10"
+requires-python = ">= 3.9"
 
 [project.optional-dependencies]
 test = [

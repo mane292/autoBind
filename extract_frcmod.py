@@ -20,29 +20,38 @@ import parmed as pmd
 from parmed.amber import AmberMask
 
 def collect_special_types(struct, selector: str):
+    """Collect atom types and indices for the given selector mask.
+
+    Returns
+    -------
+    special_types : set
+        Set of unique atom types in the selection
+    indices : list
+        List of atom indices (preserves all atoms, no deduplication)
+    """
     selector = selector.strip()
 
     # METAL_AUTO unchanged (if you still want it); keep your existing block here if you like
     if selector.upper().startswith("METAL_AUTO:"):
         cutoff = float(selector.split(":", 1)[1])
         # ... your existing METAL_AUTO logic ...
-        # return special_types, special_atoms
+        # return special_types, indices
         raise RuntimeError("METAL_AUTO block not shown here; keep your existing one above if needed.")
 
     # Always use AmberMask for residue/atom masks
     mask = AmberMask(struct, selector)
-    indices = mask.Selected()  # list of atom indices
+    indices = list(mask.Selected())  # list of atom indices
 
     if not indices:
         raise RuntimeError(f"Mask '{selector}' selected 0 atoms. Check residue names.")
 
-    special_atoms = {struct.atoms[i] for i in indices}
-    special_types = {a.type for a in special_atoms if a.type is not None}
+    # Collect atom types directly from indices (avoid set of atoms which can dedupe identical atoms)
+    special_types = {struct.atoms[i].type for i in indices if struct.atoms[i].type is not None}
 
     if not special_types:
         raise RuntimeError(f"Mask '{selector}' selected atoms but none had atom types.")
 
-    return special_types, special_atoms
+    return special_types, indices
 
 def fmt(x, w=12, p=6):
     return f"{x:{w}.{p}f}"
@@ -96,10 +105,18 @@ def main():
     print("Before load_atom_info:", [a.type for a in struct.atoms[:10]])
 
     # --- identify special types ---
-    special_types, special_atoms = collect_special_types(struct, selector)
-    print(f"Selector {selector!r}: selected {len(special_atoms)} atoms, {len(special_types)} types")
-    sel_idx = sorted(a.idx for a in special_atoms)
-    sub = struct[sel_idx]                       # subset structure
+    special_types, sel_idx = collect_special_types(struct, selector)
+    sel_idx = sorted(sel_idx)  # Sort indices for consistent ordering
+    print(f"Selector {selector!r}: selected {len(sel_idx)} atoms, {len(special_types)} types")
+
+    # Workaround for parmed bug: when selecting all atoms via list indexing,
+    # atoms can be dropped. Use slice syntax when selecting all atoms.
+    if len(sel_idx) == len(struct.atoms) and sel_idx == list(range(len(struct.atoms))):
+        print("  Using slice syntax (all atoms selected)")
+        sub = struct[:]  # Use slice to avoid parmed indexing bug
+    else:
+        sub = struct[sel_idx]
+    print(f"Subset structure: {len(sub.atoms)} atoms")
     sub.save(out_mol2, format="mol2", overwrite=True)
     out_pdb = out_mol2.rsplit(".", 1)[0] + ".pdb"
     sub.save(out_pdb, format="pdb", overwrite=True)

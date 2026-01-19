@@ -29,7 +29,13 @@ src/autobind/data/counterions/BFX.frcmod
 src/autobind/data/counterions/BFX.mol2
 src/autobind/data/counterions/BFY.frcmod
 src/autobind/data/counterions/BFY.mol2
+src/autobind/data/solvent_box_info/ACEequilbox.lib
 src/autobind/data/solvent_box_info/DCMequilbox.lib
+src/autobind/data/solvent_box_info/DMSOequilbox.lib
+src/autobind/data/solvent_box_info/HCNequilbox.lib
+src/autobind/data/solvent_box_info/Nitroequilbox.lib
+src/autobind/data/solvent_box_info/THFequilbox.lib
 src/autobind/data/solvent_box_info/leaprc.gaff2
+src/autobind/data/solvent_box_info/oDFBequilbox.lib
 tests/__init__.py
 tests/test_autobind.py

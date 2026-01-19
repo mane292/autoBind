@@ -1,13 +1,25 @@
 name: autobind
 channels:
   - conda-forge
-  - defaults
 dependencies:
-  - python>=3.10
+  - python=3.9
+
+  # core
   - numpy
   - pip
+
+  # metallicious deps (as per their install instructions)
+  - rdkit
+  - parmed
+  - autode
+  - psiresp
+  - mdanalysis
+  - networkx
+  - qcelemental=0.25.1
+  - ambertools
+
+  # pip installs last
   - pip:
-    - parmed
-    - metallicious
-    - typer
-    - -e .
+      - metallicious
+      - typer
+      - -e .

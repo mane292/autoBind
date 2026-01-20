@@ -35,7 +35,7 @@ conda install -c conda-forge ambertools
 
 ```bash
 # Create a new environment
-conda create -n autobind python=3.10
+conda create -n autobind python=3.9
 conda activate autobind
 
 # Install AmberTools
